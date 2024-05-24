@@ -8,11 +8,21 @@ import appwriteService from '../../appwrite/config';
 function PostForm({ post }) {
     const navigate = useNavigate();
     const userData = useSelector((state) => state.auth.userData);
+    const slugTransform = (value) => {
+        if (value && typeof value === "string") {
+            return value
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-zA-Z\d\s]+/g, "-")
+                .replace(/\s/g, "-");
+        }
+        return "";
+    };
 
     const { register, handleSubmit, control, watch, setValue, getValues } = useForm({
         defaultValues: {
             title: post?.title || "",
-            slug: post?.slug || "",
+            slug: slugTransform(post?.title) || "",
             content: post?.content || "",
             status: post?.status || "active"
         },
@@ -40,8 +50,11 @@ function PostForm({ post }) {
                     data.featuredImage = file.$id;
                     const userId = userData.$id;
                     const author = userData.name;
-                    const newPost = await appwriteService.createPost({ ...data, userId, author });
-                    navigate(`/post/${newPost.$id}`);
+                    const slug = data.slug
+                    console.log(data);
+
+                    await appwriteService.createPost({ ...data, userId, author });
+                    navigate(`/post/${slug}`);
                 } else {
                     console.error("Error uploading file:", file);
                 }
@@ -51,16 +64,6 @@ function PostForm({ post }) {
         }
     };
 
-    const slugTransform = (value) => {
-        if (value && typeof value === "string") {
-            return value
-                .trim()
-                .toLowerCase()
-                .replace(/[^a-zA-Z\d\s]+/g, "-")
-                .replace(/\s/g, "-");
-        }
-        return "";
-    };
 
     React.useEffect(() => {
         const subscription = watch((value, { name }) => {
@@ -97,7 +100,6 @@ function PostForm({ post }) {
                     label="Featured Image :"
                     type="file"
                     className="mb-4"
-                    accept="image/png, image/jpg, image/jpeg, image/gif"
                     {...register("image", { required: !post })}
                 />
                 {post && post.featuredImage && (

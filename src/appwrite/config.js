@@ -27,7 +27,7 @@ class Service {
       const postCreated = await this.databases.createDocument(
         conf.appWriteDatabaseID,
         conf.appWriteCollectionID,
-        slug,
+        ID.unique(),
         { title, content, featuredImage, status, userId, author }
       );
       console.log("Post Created Successfully ");

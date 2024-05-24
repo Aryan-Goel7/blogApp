@@ -1,88 +1,96 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react';
 import appwriteService from '../appwrite/config';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router';
-import { Link } from 'react-router-dom';
-import parse from "html-react-parser";
+import { Link, useNavigate } from 'react-router-dom';
+import ReactHtmlParser from "html-react-parser";
 import { Container, Button } from '../components';
-import { useNavigate } from 'react-router';
+
 function Post() {
     const { slug } = useParams();
-    // console.log(slug);
     const navigate = useNavigate();
     const [post, setPostContent] = useState(null);
     const [imagePath, setImagePath] = useState();
+    const [loading, setLoading] = useState(true);
     const userData = useSelector((state) => state.auth.userData);
-    useEffect(() => {
-        if (slug) {
-            appwriteService.getPost(slug).then(data => {
-                if (data) {
-                    console.log(data);
-                    const fetchFilePath = async () => {
-                        try {
-                            const filePath = await appwriteService.getFilePreview(data.featuredImage);
-                            if (filePath) {
-                                setImagePath(filePath);
-                            }
-                        } catch (err) {
-                            console.log('Error occurred in fetching image:', err.message);
-                        }
-                    };
-                    fetchFilePath();
-                    setPostContent(data);
-                }
-                else {
-                    setPostContent(null);
-                    navigate("/");
-                }
-            })
 
-        }
-        else {
-            navigate("/");
-        }
-    }, [slug, navigate])
-    const isAuthor = post && userData ? post.userId === userData.$id : false;
-    const deletePost = () => {
-        appwriteService.deletePost(post.$id).then((status) => {
-            if (status) {
-                appwriteService.deleteFile(post.featuredImage);
+    useEffect(() => {
+        const fetchPost = async () => {
+            if (slug) {
+                try {
+                    const data = await appwriteService.getPost(slug);
+                    if (data) {
+                        const filePath = await appwriteService.getFilePreview(data.featuredImage);
+                        if (filePath) {
+                            setImagePath(filePath);
+                        }
+                        setPostContent(data);
+                    } else {
+                        navigate("/");
+                    }
+                } catch (err) {
+                    console.error('Error fetching post:', err.message);
+                    navigate("/");
+                } finally {
+                    setLoading(false);
+                }
+            } else {
                 navigate("/");
             }
-        });
-    };
-    return post ? (
-        <div className="py-8">
-            <Container>
-                <div className="w-full flex justify-center mb-4 relative border rounded-xl p-2">
-                    <img
-                        src={imagePath}
-                        alt={post.title}
-                        className="rounded-xl"
-                    />
+        };
+        fetchPost();
+    }, [slug, navigate]);
 
-                    {isAuthor && (
-                        <div className="absolute right-6 top-6">
-                            <Link to={`/edit-post/${post.$id}`}>
-                                <Button bgColor="bg-green-500" className="mr-3">
-                                    Edit
-                                </Button>
-                            </Link>
-                            <Button bgColor="bg-red-500" onClick={deletePost}>
-                                Delete
-                            </Button>
+    const isAuthor = useMemo(() => post && userData ? post.userId === userData.$id : false, [post, userData]);
+
+    const deletePost = async () => {
+        try {
+            const status = await appwriteService.deletePost(post.$id);
+            if (status) {
+                await appwriteService.deleteFile(post.featuredImage);
+                navigate("/");
+            }
+        } catch (err) {
+            console.error('Error deleting post:', err.message);
+        }
+    };
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    return post ? (
+        <div className="py-8 bg-gray-50">
+            <Container>
+                <div className="w-full flex justify-center mb-4">
+                    <div className="relative w-full max-w-3xl border rounded-xl overflow-hidden shadow-md h-64">
+                        <img
+                            src={imagePath}
+                            alt={post.title}
+                            className="w-full h-full object-cover object-center"
+                        />
+                        <div className="absolute inset-0 flex flex-col justify-center items-center text-center bg-black bg-opacity-50 px-4">
+                            <h1 className="text-3xl font-bold text-white mb-2">{post.title}</h1>
+                            <p className="text-gray-300 mb-4">by {post.author}</p>
+                            {isAuthor && (
+                                <div className="flex space-x-2">
+                                    <Link to={`/edit-post/${post.$id}`}>
+                                        <Button bgColor="bg-green-500" className="mr-3">
+                                            Edit
+                                        </Button>
+                                    </Link>
+                                    <Button bgColor="bg-red-500" onClick={deletePost}>
+                                        Delete
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
-                <div className="w-full mb-6">
-                    <h1 className="text-2xl font-bold">{post.title}</h1>
-                </div>
-                <div className="browser-css">
-                    {parse(post.content)}
-                </div>
-            </Container >
-        </div >
+                <div className="w-full max-w-3xl prose mx-auto">{ReactHtmlParser(post.content)}</div>
+            </Container>
+        </div>
     ) : null;
 }
 
-export default Post
+export default Post;
