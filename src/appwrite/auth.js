@@ -21,7 +21,7 @@ class AuthService {
         name
       );
       if (userAccount) {
-        this.logIn({ email, password });
+        return await this.logIn({ email, password });
       } else {
       }
     } catch (error) {

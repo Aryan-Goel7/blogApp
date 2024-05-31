@@ -4,11 +4,12 @@ import './App.css'
 import authService from "./appwrite/auth"
 import { login, logout } from "./store/authSlice"
 import { Footer, Header } from './components'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 
 function App() {
   const [loading, setLoading] = useState(true)
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const isLoggedIn = useSelector((state) => state.auth.status);
   useEffect(() => {
     authService.getCurrentUser()
@@ -22,6 +23,8 @@ function App() {
       .finally(() => setLoading(false))
   }, [])
 
+  if (!isLoggedIn)
+    navigate("/login");
   return !loading ? (
     <div className='min-h-screen flex flex-wrap content-between bg-gray-400'>
       <div className='w-full block'>

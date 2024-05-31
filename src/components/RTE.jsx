@@ -48,5 +48,4 @@ function RTE({ name = "content", control, defaultValue = "", label }) {
         </div>
     );
 }
-
 export default RTE;

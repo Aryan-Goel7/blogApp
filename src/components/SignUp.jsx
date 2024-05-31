@@ -10,7 +10,7 @@ function SignUp() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const history = useNavigate();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
     const { register, handleSubmit, formState: { errors } } = useForm();
 
@@ -19,9 +19,10 @@ function SignUp() {
         setLoading(true);
         try {
             const userData = await authService.signUp(data);
+            console.log(userData);
             if (userData) {
                 dispatch(login(userData));
-                history('/');
+                navigate('/');
             }
         } catch (error) {
             setError(error.message);

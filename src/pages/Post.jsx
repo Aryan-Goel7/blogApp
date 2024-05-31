@@ -91,7 +91,7 @@ function Post() {
                         </div>
                     </div>
                 </div>
-                <div className="w-full max-w-3xl prose mx-auto">{ReactHtmlParser(post.content)}</div>
+                <div className="w-full max-w-3xl prose mx-auto text-left">{ReactHtmlParser(post.content)}</div>
             </Container>
         </div>
     ) : null;

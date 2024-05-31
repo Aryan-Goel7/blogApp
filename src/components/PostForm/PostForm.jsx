@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { Input, Button, RTE, Select } from "../";
@@ -8,6 +8,7 @@ import appwriteService from '../../appwrite/config';
 function PostForm({ post }) {
     const navigate = useNavigate();
     const userData = useSelector((state) => state.auth.userData);
+
     const slugTransform = (value) => {
         if (value && typeof value === "string") {
             return value
@@ -19,7 +20,7 @@ function PostForm({ post }) {
         return "";
     };
 
-    const { register, handleSubmit, control, watch, setValue, getValues } = useForm({
+    const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors } } = useForm({
         defaultValues: {
             title: post?.title || "",
             slug: slugTransform(post?.title) || "",
@@ -48,10 +49,9 @@ function PostForm({ post }) {
                 const file = await appwriteService.uploadFile(data.image[0]);
                 if (file) {
                     data.featuredImage = file.$id;
-                    const userId = userData.$id;
+                    const userId = userData['$id'];
                     const author = userData.name;
-                    const slug = data.slug
-                    console.log(data);
+                    const slug = data.slug;
 
                     await appwriteService.createPost({ ...data, userId, author });
                     navigate(`/post/${slug}`);
@@ -63,7 +63,6 @@ function PostForm({ post }) {
             console.error("Error submitting post:", error);
         }
     };
-
 
     React.useEffect(() => {
         const subscription = watch((value, { name }) => {
@@ -82,26 +81,39 @@ function PostForm({ post }) {
                     label="Title :"
                     placeholder="Title"
                     className="mb-4"
-                    {...register("title", { required: true })}
+                    {...register("title", { required: "Title is required" })}
                 />
+                {errors.title && <p className="text-red-500">{errors.title.message}</p>}
+
                 <Input
                     label="Slug :"
                     placeholder="Slug"
                     className="mb-4"
-                    {...register("slug", { required: true })}
+                    {...register("slug", { required: "Slug is required" })}
                     onInput={(e) => {
                         setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate: true });
                     }}
                 />
-                <RTE label="Content :" name="content" control={control} defaultValue={getValues("content")} />
+                {errors.slug && <p className="text-red-500">{errors.slug.message}</p>}
+
+                <RTE
+                    label="Content :"
+                    name="content"
+                    control={control}
+                    defaultValue={getValues("content")}
+                    rules={{ required: "Content is required" }}
+                />
+                {errors.content && <p className="text-red-500">{errors.content.message}</p>}
             </div>
             <div className="w-1/3 px-2">
                 <Input
                     label="Featured Image :"
                     type="file"
                     className="mb-4"
-                    {...register("image", { required: !post })}
+                    {...register("image", { required: !post ? "Featured image is required" : false })}
                 />
+                {errors.image && <p className="text-red-500">{errors.image.message}</p>}
+
                 {post && post.featuredImage && (
                     <div className="w-full mb-4">
                         <img
@@ -115,8 +127,10 @@ function PostForm({ post }) {
                     options={["active", "inactive"]}
                     label="Status"
                     className="mb-4"
-                    {...register("status", { required: true })}
+                    {...register("status", { required: "Status is required" })}
                 />
+                {errors.status && <p className="text-red-500">{errors.status.message}</p>}
+
                 <Button type="submit" bgColor={post ? "bg-green-500" : undefined} className="w-full">
                     {post ? "Update" : "Submit"}
                 </Button>
