@@ -45,10 +45,14 @@ function Post() {
 
     const deletePost = async () => {
         try {
-            const status = await appwriteService.deletePost(post.$id);
-            if (status) {
-                await appwriteService.deleteFile(post.featuredImage);
+            const [deletePostStatus, deleteFileStatus] = await Promise.all([
+                appwriteService.deletePost(post.$id),
+                appwriteService.deleteFile(post.featuredImage)
+            ]);
+            if (deletePostStatus && deleteFileStatus) {
                 navigate("/");
+            } else {
+                throw new Error('Failed to delete post or file.');
             }
         } catch (err) {
             console.error('Error deleting post:', err.message);
